@@ -1,1 +1,231 @@
-https://github.com/GjDahik/8bitdnd.git
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>D&D 8-Bit Battle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #2c3e50;
+            --ui-panel: #ecf0f1;
+            --player-color: #3498db;
+            --enemy-color: #e74c3c;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 600px;
+            background-color: var(--bg-color);
+            border: 8px solid #fff;
+            padding: 20px;
+            text-align: center;
+            image-rendering: pixelated;
+        }
+
+        /* Escenario de batalla */
+        #battle-screen {
+            height: 200px;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            margin-bottom: 20px;
+            border-bottom: 4px solid #fff;
+            padding-bottom: 10px;
+        }
+
+        .sprite {
+            width: 80px;
+            height: 80px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+
+        .hp-bar-container {
+            width: 100px;
+            height: 15px;
+            border: 2px solid #fff;
+            position: absolute;
+            top: -40px;
+            left: -10px;
+        }
+
+        .hp-bar {
+            height: 100%;
+            background-color: #2ecc71;
+            width: 100%;
+            transition: width 0.3s;
+        }
+
+        /* Consola de Log */
+        #log {
+            height: 100px;
+            background: #000;
+            color: #0f0;
+            font-size: 10px;
+            padding: 10px;
+            overflow-y: auto;
+            text-align: left;
+            border: 4px solid #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        /* Botones */
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 15px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            cursor: pointer;
+            border: 4px solid #000;
+            background: var(--ui-panel);
+        }
+
+        button:active {
+            transform: translateY(4px);
+        }
+
+        /* Animaciones simples */
+        .shake { animation: shake 0.2s; }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(5px); }
+            50% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h2 style="font-size: 16px;">DUNGEON BATTLE</h2>
+        
+        <div id="battle-screen">
+            <div id="player-sprite" class="sprite">
+                <div class="hp-bar-container"><div id="player-hp" class="hp-bar"></div></div>
+                🛡️
+                <div style="font-size: 8px; margin-top: 10px;">GUERRERO</div>
+            </div>
+
+            <div id="enemy-sprite" class="sprite">
+                <div class="hp-bar-container"><div id="enemy-hp" class="hp-bar"></div></div>
+                👹
+                <div style="font-size: 8px; margin-top: 10px;">GOBLIN</div>
+            </div>
+        </div>
+
+        <div id="log">¡Un Goblin salvaje aparece! ¡Es tu turno!</div>
+
+        <div class="controls">
+            <button onclick="attack()">ATACAR</button>
+            <button onclick="heal()">CURAR</button>
+        </div>
+    </div>
+
+    <script>
+        // Estadísticas de D&D
+        let player = { hp: 30, maxHp: 30, ac: 14, name: "Jugador" };
+        let enemy = { hp: 25, maxHp: 25, ac: 12, name: "Goblin" };
+
+        const logElement = document.getElementById('log');
+
+        function updateLog(msg) {
+            logElement.innerHTML += `> ${msg}<br>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function rollDice(sides) {
+            return Math.floor(Math.random() * sides) + 1;
+        }
+
+        function updateBars() {
+            document.getElementById('player-hp').style.width = (player.hp / player.maxHp * 100) + "%";
+            document.getElementById('enemy-hp').style.width = (enemy.hp / enemy.maxHp * 100) + "%";
+        }
+
+        function attack() {
+            // --- Turno del Jugador ---
+            let attackRoll = rollDice(20);
+            updateLog(`Lanzas d20... sacas un ${attackRoll}`);
+
+            if (attackRoll >= enemy.ac) {
+                let dmg = rollDice(8) + 2;
+                enemy.hp -= dmg;
+                document.getElementById('enemy-sprite').classList.add('shake');
+                updateLog(`¡Impacto! Haces ${dmg} de daño.`);
+                setTimeout(() => document.getElementById('enemy-sprite').classList.remove('shake'), 200);
+            } else {
+                updateLog("¡Fallaste el ataque!");
+            }
+
+            checkGameOver() || setTimeout(enemyTurn, 1000);
+            updateBars();
+        }
+
+        function heal() {
+            let healAmt = rollDice(6) + 2;
+            player.hp = Math.min(player.maxHp, player.hp + healAmt);
+            updateLog(`Usas una poción. Recuperas ${healAmt} HP.`);
+            updateBars();
+            setTimeout(enemyTurn, 1000);
+        }
+
+        function enemyTurn() {
+            updateLog("Turno del Goblin...");
+            let attackRoll = rollDice(20);
+
+            if (attackRoll >= player.ac) {
+                let dmg = rollDice(6);
+                player.hp -= dmg;
+                document.getElementById('player-sprite').classList.add('shake');
+                updateLog(`¡El Goblin te muerde por ${dmg} de daño!`);
+                setTimeout(() => document.getElementById('player-sprite').classList.remove('shake'), 200);
+            } else {
+                updateLog("¡El Goblin falla!");
+            }
+
+            updateBars();
+            checkGameOver();
+        }
+
+        function checkGameOver() {
+            if (enemy.hp <= 0) {
+                enemy.hp = 0;
+                updateBars();
+                updateLog("<strong>¡VICTORIA! El Goblin ha muerto.</strong>");
+                disableButtons();
+                return true;
+            }
+            if (player.hp <= 0) {
+                player.hp = 0;
+                updateBars();
+                updateLog("<strong>HAS MUERTO... Fin de la partida.</strong>");
+                disableButtons();
+                return true;
+            }
+            return false;
+        }
+
+        function disableButtons() {
+            document.querySelectorAll('button').forEach(b => b.disabled = true);
+        }
+    </script>
+</body>
+</html>
