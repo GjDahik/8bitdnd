@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>D&D 8-Bit Battle</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 8-Bit Adventure</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -10,6 +11,7 @@
             --ui-panel: #ecf0f1;
             --player-color: #3498db;
             --enemy-color: #e74c3c;
+            --boss-color: #8e44ad;
         }
 
         body {
@@ -20,46 +22,132 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
         #game-container {
-            width: 600px;
+            max-width: 700px;
+            width: 100%;
             background-color: var(--bg-color);
             border: 8px solid #fff;
             padding: 20px;
             text-align: center;
             image-rendering: pixelated;
+            box-sizing: border-box;
+        }
+
+        /* Pantalla de selección de personaje */
+        #character-select {
+            display: block;
+        }
+
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .character-card {
+            background: #34495e;
+            border: 4px solid #7f8c8d;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .character-card:hover {
+            border-color: #3498db;
+            background: #2c3e50;
+        }
+
+        .character-card.selected {
+            border-color: #f39c12;
+            background: #e67e22;
+        }
+
+        .character-sprite {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .character-name {
+            font-size: 10px;
+            margin-bottom: 10px;
+        }
+
+        .character-stats {
+            font-size: 8px;
+            color: #bdc3c7;
+            line-height: 1.4;
+        }
+
+        /* HUD del juego */
+        #game-hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .level-info {
+            font-size: 12px;
+            color: #f39c12;
+        }
+
+        .player-info {
+            font-size: 10px;
+            text-align: left;
         }
 
         /* Escenario de batalla */
         #battle-screen {
-            height: 200px;
+            height: 220px;
             display: flex;
             justify-content: space-around;
             align-items: flex-end;
             margin-bottom: 20px;
             border-bottom: 4px solid #fff;
             padding-bottom: 10px;
-        }
-
-        .sprite {
-            width: 80px;
-            height: 80px;
-            background-size: contain;
-            background-repeat: no-repeat;
             position: relative;
         }
 
+        .sprite {
+            width: 90px;
+            height: 90px;
+            position: relative;
+            font-size: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .boss-sprite {
+            width: 120px;
+            height: 120px;
+            font-size: 60px;
+        }
+
+        .bbeg-sprite {
+            width: 150px;
+            height: 150px;
+            font-size: 80px;
+        }
+
         .hp-bar-container {
-            width: 100px;
-            height: 15px;
+            width: 120px;
+            height: 18px;
             border: 2px solid #fff;
             position: absolute;
-            top: -40px;
-            left: -10px;
+            top: -45px;
+            left: -15px;
+            background-color: #000;
         }
 
         .hp-bar {
@@ -67,11 +155,35 @@
             background-color: #2ecc71;
             width: 100%;
             transition: width 0.3s;
+            position: relative;
+        }
+
+        .hp-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #fff;
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .hp-bar.low { background-color: #f39c12; }
+        .hp-bar.critical { background-color: #e74c3c; }
+
+        .character-label {
+            font-size: 8px;
+            margin-top: 10px;
+            color: #fff;
         }
 
         /* Consola de Log */
         #log {
-            height: 100px;
+            height: 140px;
             background: #000;
             color: #0f0;
             font-size: 10px;
@@ -80,6 +192,7 @@
             text-align: left;
             border: 4px solid #7f8c8d;
             margin-bottom: 20px;
+            line-height: 1.4;
         }
 
         /* Botones */
@@ -87,144 +200,700 @@
             display: flex;
             gap: 10px;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         button {
-            padding: 15px;
+            padding: 15px 20px;
             font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
+            font-size: 10px;
             cursor: pointer;
             border: 4px solid #000;
             background: var(--ui-panel);
+            color: #000;
+            transition: all 0.1s;
         }
 
-        button:active {
-            transform: translateY(4px);
+        button:hover { background-color: #d5dbdb; }
+        button:active { transform: translateY(2px); }
+        button:disabled {
+            background-color: #7f8c8d;
+            color: #bdc3c7;
+            cursor: not-allowed;
         }
 
-        /* Animaciones simples */
-        .shake { animation: shake 0.2s; }
+        .primary-button {
+            background-color: #3498db;
+            color: #fff;
+            border-color: #2980b9;
+        }
+
+        .primary-button:hover {
+            background-color: #2980b9;
+        }
+
+        /* Animaciones */
+        .shake { animation: shake 0.3s; }
         @keyframes shake {
             0% { transform: translateX(0); }
             25% { transform: translateX(5px); }
             50% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
             100% { transform: translateX(0); }
+        }
+
+        .level-up-animation {
+            animation: levelUp 2s ease-in-out;
+        }
+
+        @keyframes levelUp {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); color: #f39c12; }
+            100% { transform: scale(1); }
+        }
+
+        .damage-number, .heal-number {
+            position: absolute;
+            top: -20px;
+            right: -10px;
+            font-size: 12px;
+            animation: floatUp 1s ease-out forwards;
+            pointer-events: none;
+            font-weight: bold;
+        }
+
+        .damage-number { color: #e74c3c; }
+        .heal-number { color: #2ecc71; }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+
+        /* Pantallas */
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* Victory/Game Over screens */
+        .end-screen {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .end-screen h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .character-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .sprite { width: 70px; height: 70px; font-size: 35px; }
+            .boss-sprite { width: 90px; height: 90px; font-size: 45px; }
+            .bbeg-sprite { width: 110px; height: 110px; font-size: 55px; }
+            
+            .hp-bar-container { width: 100px; left: -5px; }
+            button { padding: 12px 16px; font-size: 9px; }
         }
     </style>
 </head>
 <body>
 
     <div id="game-container">
-        <h2 style="font-size: 16px;">DUNGEON BATTLE</h2>
-        
-        <div id="battle-screen">
-            <div id="player-sprite" class="sprite">
-                <div class="hp-bar-container"><div id="player-hp" class="hp-bar"></div></div>
-                🛡️
-                <div style="font-size: 8px; margin-top: 10px;">GUERRERO</div>
+        <!-- Pantalla de Selección de Personaje -->
+        <div id="character-select" class="screen active">
+            <h2>🏰 ELIGE TU HÉROE 🏰</h2>
+            <div class="character-grid">
+                <div class="character-card" onclick="selectCharacter('warrior')">
+                    <div class="character-sprite">⚔️</div>
+                    <div class="character-name">WARRIOR</div>
+                    <div class="character-stats">
+                        HP: 35 | AC: 16<br>
+                        ATK: 1d8+3<br>
+                        Tanque resistente
+                    </div>
+                </div>
+                
+                <div class="character-card" onclick="selectCharacter('rogue')">
+                    <div class="character-sprite">🗡️</div>
+                    <div class="character-name">ROGUE</div>
+                    <div class="character-stats">
+                        HP: 28 | AC: 15<br>
+                        ATK: 1d6+4<br>
+                        Ataques críticos
+                    </div>
+                </div>
+                
+                <div class="character-card" onclick="selectCharacter('mage')">
+                    <div class="character-sprite">🧙‍♂️</div>
+                    <div class="character-name">WIZARD</div>
+                    <div class="character-stats">
+                        HP: 22 | AC: 12<br>
+                        ATK: 1d10+2<br>
+                        Magia poderosa
+                    </div>
+                </div>
+                
+                <div class="character-card" onclick="selectCharacter('cleric')">
+                    <div class="character-sprite">🛡️</div>
+                    <div class="character-name">CLERIC</div>
+                    <div class="character-stats">
+                        HP: 30 | AC: 14<br>
+                        ATK: 1d8+2<br>
+                        Curación mejorada
+                    </div>
+                </div>
+                
+                <div class="character-card" onclick="selectCharacter('paladin')">
+                    <div class="character-sprite">✨</div>
+                    <div class="character-name">PALADIN</div>
+                    <div class="character-stats">
+                        HP: 32 | AC: 17<br>
+                        ATK: 1d6+3<br>
+                        Santo guerrero
+                    </div>
+                </div>
+                
+                <div class="character-card" onclick="selectCharacter('ranger')">
+                    <div class="character-sprite">🏹</div>
+                    <div class="character-name">RANGER</div>
+                    <div class="character-stats">
+                        HP: 26 | AC: 13<br>
+                        ATK: 1d8+4<br>
+                        Cazador preciso
+                    </div>
+                </div>
+            </div>
+            <button onclick="startGame()" class="primary-button">🚀 COMENZAR AVENTURA</button>
+        </div>
+
+        <!-- Pantalla Principal del Juego -->
+        <div id="main-game" class="screen">
+            <div id="game-hud">
+                <div class="level-info">
+                    <div>🏰 NIVEL: <span id="current-level">1</span>/10</div>
+                    <div>🌟 HÉROE LV: <span id="player-level">1</span></div>
+                    <div>🪙 XP: <span id="player-xp">0</span></div>
+                </div>
+                
+                <div class="player-info">
+                    <div>🎭 <span id="player-class">HÉROE</span></div>
+                    <div>❤️ HP: <span id="player-hp-text">30/30</span></div>
+                    <div>🛡️ AC: <span id="player-ac-text">14</span> | ⚔️ ATK: <span id="player-attack-text">1d8+3</span></div>
+                </div>
             </div>
 
-            <div id="enemy-sprite" class="sprite">
-                <div class="hp-bar-container"><div id="enemy-hp" class="hp-bar"></div></div>
-                👹
-                <div style="font-size: 8px; margin-top: 10px;">GOBLIN</div>
+            <div id="battle-screen">
+                <div id="player-sprite" class="sprite">
+                    <div class="hp-bar-container">
+                        <div id="player-hp" class="hp-bar">
+                            <div class="hp-text" id="player-hp-bar-text">30/30</div>
+                        </div>
+                    </div>
+                    🛡️
+                    <div class="character-label" id="player-name">GUERRERO</div>
+                </div>
+
+                <div id="enemy-sprite" class="sprite">
+                    <div class="hp-bar-container">
+                        <div id="enemy-hp" class="hp-bar">
+                            <div class="hp-text" id="enemy-hp-bar-text">25/25</div>
+                        </div>
+                    </div>
+                    👹
+                    <div class="character-label" id="enemy-name">GOBLIN</div>
+                </div>
+            </div>
+
+            <div id="log">🎮 ¡Tu aventura comienza aquí!<br>⚔️ ¡Prepárate para el combate!</div>
+
+            <div class="controls">
+                <button onclick="attack()" id="attack-btn">⚔️ ATACAR</button>
+                <button onclick="heal()" id="heal-btn">💖 CURAR</button>
+                <button onclick="nextLevel()" id="next-btn" style="display: none;">➡️ SIGUIENTE NIVEL</button>
             </div>
         </div>
 
-        <div id="log">¡Un Goblin salvaje aparece! ¡Es tu turno!</div>
+        <!-- Pantalla de Victoria Final -->
+        <div id="victory-screen" class="screen">
+            <div class="end-screen">
+                <h2>🏆 ¡VICTORIA ÉPICA! 🏆</h2>
+                <p>¡Has derrotado a todos los enemigos y completado la aventura!</p>
+                <p>Tu <span id="final-class">HÉROE</span> ha alcanzado la gloria eterna.</p>
+                <button onclick="restartGame()" class="primary-button">🔄 NUEVA AVENTURA</button>
+            </div>
+        </div>
 
-        <div class="controls">
-            <button onclick="attack()">ATACAR</button>
-            <button onclick="heal()">CURAR</button>
+        <!-- Pantalla de Game Over -->
+        <div id="gameover-screen" class="screen">
+            <div class="end-screen">
+                <h2>💀 GAME OVER 💀</h2>
+                <p>Tu aventura ha llegado a su fin...</p>
+                <p>Alcanzaste el nivel <span id="final-level">1</span> con <span id="final-xp">0</span> XP.</p>
+                <button onclick="restartGame()" class="primary-button">🔄 INTENTAR DE NUEVO</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Estadísticas de D&D
-        let player = { hp: 30, maxHp: 30, ac: 14, name: "Jugador" };
-        let enemy = { hp: 25, maxHp: 25, ac: 12, name: "Goblin" };
+        // Configuración del juego
+        const characterClasses = {
+            warrior: { name: 'WARRIOR', sprite: '⚔️', hp: 35, ac: 16, attack: [8, 3], heal: [6, 2] },
+            rogue: { name: 'ROGUE', sprite: '🗡️', hp: 28, ac: 15, attack: [6, 4], heal: [4, 2], crit: 19 },
+            mage: { name: 'WIZARD', sprite: '🧙‍♂️', hp: 22, ac: 12, attack: [10, 2], heal: [8, 1] },
+            cleric: { name: 'CLERIC', sprite: '🛡️', hp: 30, ac: 14, attack: [8, 2], heal: [8, 4] },
+            paladin: { name: 'PALADIN', sprite: '✨', hp: 32, ac: 17, attack: [6, 3], heal: [6, 3], crit: 19 },
+            ranger: { name: 'RANGER', sprite: '🏹', hp: 26, ac: 13, attack: [8, 4], heal: [4, 3], crit: 18 }
+        };
 
-        const logElement = document.getElementById('log');
+        const enemies = {
+            1: [{ name: 'GOBLIN DÉBIL', sprite: '👹', hp: 25, ac: 10, attack: [4, 0], xp: 25 }], // Total: 25 HP
+            2: [
+                { name: 'GOBLIN', sprite: '👹', hp: 28, ac: 11, attack: [4, 1], xp: 30 },
+                { name: 'GOBLIN EXPLORADOR', sprite: '🏹', hp: 25, ac: 12, attack: [4, 1], xp: 25 }
+            ], // Total: 53 HP
+            3: [{ name: 'ORC CAPITÁN', sprite: '🐗', hp: 55, ac: 13, attack: [6, 2], xp: 100, boss: true }], // Mini-boss: 55 HP
+            4: [
+                { name: 'ESQUELETO', sprite: '💀', hp: 32, ac: 12, attack: [4, 2], xp: 35 },
+                { name: 'ZOMBIE', sprite: '🧟', hp: 38, ac: 10, attack: [6, 1], xp: 40 },
+                { name: 'GOBLIN CHAMÁN', sprite: '🔮', hp: 35, ac: 11, attack: [6, 1], xp: 45 }
+            ], // Total: 105 HP
+            5: [
+                { name: 'ORC GUERRERO', sprite: '🐗', hp: 42, ac: 13, attack: [6, 2], xp: 50 },
+                { name: 'HOBGOBLIN', sprite: '👺', hp: 45, ac: 14, attack: [6, 2], xp: 45 }
+            ], // Total: 87 HP
+            6: [{ name: 'TROLL GUARDIÁN', sprite: '👹', hp: 75, ac: 14, attack: [8, 3], xp: 150, boss: true }], // Mini-boss: 75 HP
+            7: [
+                { name: 'SOMBRA', sprite: '👻', hp: 48, ac: 13, attack: [6, 3], xp: 60 },
+                { name: 'GÓLEM DE PIEDRA', sprite: '🗿', hp: 55, ac: 15, attack: [8, 2], xp: 70 },
+                { name: 'ARAÑA GIGANTE', sprite: '🕷️', hp: 50, ac: 12, attack: [6, 3], xp: 55 }
+            ], // Total: 153 HP
+            8: [
+                { name: 'DEMONIO MENOR', sprite: '😈', hp: 52, ac: 14, attack: [6, 4], xp: 80 },
+                { name: 'ELEMENTAL DE FUEGO', sprite: '🔥', hp: 50, ac: 13, attack: [8, 3], xp: 75 }
+            ], // Total: 102 HP
+            9: [
+                { name: 'VAMPIRO', sprite: '🧛', hp: 58, ac: 15, attack: [8, 3], xp: 100 },
+                { name: 'LICH', sprite: '💀', hp: 55, ac: 16, attack: [10, 3], xp: 110 }
+            ], // Total: 113 HP
+            10: [{ name: 'DRAGÓN ANCIANO', sprite: '🐉', hp: 120, ac: 18, attack: [10, 5], xp: 500, bbeg: true }] // BBEG: 120 HP
+        };
 
-        function updateLog(msg) {
-            logElement.innerHTML += `> ${msg}<br>`;
-            logElement.scrollTop = logElement.scrollHeight;
+        // Estado del juego
+        let gameState = {
+            selectedClass: null,
+            player: null,
+            currentLevel: 1,
+            currentEnemyIndex: 0,
+            enemies: [],
+            playerXP: 0,
+            playerLevel: 1,
+            inCombat: false,
+            turnInProgress: false // Nueva variable para controlar turnos
+        };
+
+        function selectCharacter(className) {
+            document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
+            event.target.closest('.character-card').classList.add('selected');
+            gameState.selectedClass = className;
+        }
+
+        function startGame() {
+            if (!gameState.selectedClass) {
+                alert('¡Selecciona un personaje primero!');
+                return;
+            }
+
+            // Inicializar personaje
+            const charClass = characterClasses[gameState.selectedClass];
+            gameState.player = {
+                name: charClass.name,
+                sprite: charClass.sprite,
+                hp: charClass.hp,
+                maxHp: charClass.hp,
+                ac: charClass.ac,
+                attack: charClass.attack,
+                heal: charClass.heal,
+                crit: charClass.crit || 20
+            };
+
+            // Cambiar a pantalla de juego
+            showScreen('main-game');
+            initializeLevel();
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function initializeLevel() {
+            gameState.enemies = [...enemies[gameState.currentLevel]];
+            gameState.currentEnemyIndex = 0;
+            
+            // Auto level-up al comenzar cada nivel del juego
+            if (gameState.currentLevel > gameState.playerLevel) {
+                autoLevelUp();
+            }
+            
+            updateUI();
+            startCombat();
+        }
+
+        function startCombat() {
+            if (gameState.currentEnemyIndex >= gameState.enemies.length) {
+                levelComplete();
+                return;
+            }
+
+            const enemy = gameState.enemies[gameState.currentEnemyIndex];
+            gameState.currentEnemy = { ...enemy };
+            gameState.inCombat = true;
+            gameState.turnInProgress = false; // Resetear estado de turno
+
+            updateUI();
+            enableCombatButtons(); // Asegurar que los botones estén habilitados
+            
+            updateLog(`\n🎯 NIVEL ${gameState.currentLevel} - COMBATE ${gameState.currentEnemyIndex + 1}/${gameState.enemies.length}`);
+            
+            if (enemy.boss) {
+                updateLog(`⚡ ¡Un MINI-BOSS aparece!`);
+            } else if (enemy.bbeg) {
+                updateLog(`🔥 ¡EL BOSS FINAL SE ALZA ANTE TI!`);
+            }
+            
+            updateLog(`🎮 ¡${enemy.name} salvaje aparece!`);
+            updateLog(`⚔️ ¡Es tu turno, ${gameState.player.name}!`);
+        }
+
+        function updateUI() {
+            // HUD
+            document.getElementById('current-level').textContent = gameState.currentLevel;
+            document.getElementById('player-xp').textContent = gameState.playerXP;
+            document.getElementById('player-class').textContent = gameState.player.name;
+            document.getElementById('player-level').textContent = gameState.playerLevel;
+            document.getElementById('player-hp-text').textContent = `${gameState.player.hp}/${gameState.player.maxHp}`;
+            document.getElementById('player-ac-text').textContent = gameState.player.ac;
+            document.getElementById('player-attack-text').textContent = `1d${gameState.player.attack[0]}+${gameState.player.attack[1]}`;
+
+            // Sprites y nombres
+            document.getElementById('player-sprite').innerHTML = `
+                <div class="hp-bar-container">
+                    <div id="player-hp" class="hp-bar">
+                        <div class="hp-text" id="player-hp-bar-text">${gameState.player.hp}/${gameState.player.maxHp}</div>
+                    </div>
+                </div>
+                ${gameState.player.sprite}
+                <div class="character-label">${gameState.player.name} LV.${gameState.playerLevel}</div>
+            `;
+
+            if (gameState.currentEnemy) {
+                const enemySprite = document.getElementById('enemy-sprite');
+                enemySprite.className = 'sprite';
+                
+                if (gameState.currentEnemy.boss) enemySprite.classList.add('boss-sprite');
+                if (gameState.currentEnemy.bbeg) enemySprite.classList.add('bbeg-sprite');
+                
+                enemySprite.innerHTML = `
+                    <div class="hp-bar-container">
+                        <div id="enemy-hp" class="hp-bar">
+                            <div class="hp-text" id="enemy-hp-bar-text">${gameState.currentEnemy.hp}/${gameState.currentEnemy.hp}</div>
+                        </div>
+                    </div>
+                    ${gameState.currentEnemy.sprite}
+                    <div class="character-label">${gameState.currentEnemy.name}</div>
+                `;
+            }
+
+            updateBars();
+        }
+
+        function updateBars() {
+            if (!gameState.player || !gameState.currentEnemy) return;
+
+            const playerHpBar = document.getElementById('player-hp');
+            const enemyHpBar = document.getElementById('enemy-hp');
+            
+            const playerPercentage = (gameState.player.hp / gameState.player.maxHp * 100);
+            const enemyPercentage = (gameState.currentEnemy.hp / gameState.enemies[gameState.currentEnemyIndex].hp * 100);
+            
+            playerHpBar.style.width = playerPercentage + "%";
+            enemyHpBar.style.width = enemyPercentage + "%";
+            
+            // Colores según HP
+            playerHpBar.className = 'hp-bar';
+            if (playerPercentage <= 25) playerHpBar.classList.add('critical');
+            else if (playerPercentage <= 50) playerHpBar.classList.add('low');
+            
+            enemyHpBar.className = 'hp-bar';
+            if (enemyPercentage <= 25) enemyHpBar.classList.add('critical');
+            else if (enemyPercentage <= 50) enemyHpBar.classList.add('low');
+
+            // Actualizar texto de HP
+            document.getElementById('player-hp-bar-text').textContent = `${gameState.player.hp}/${gameState.player.maxHp}`;
+            document.getElementById('enemy-hp-bar-text').textContent = `${gameState.currentEnemy.hp}/${gameState.enemies[gameState.currentEnemyIndex].hp}`;
         }
 
         function rollDice(sides) {
             return Math.floor(Math.random() * sides) + 1;
         }
 
-        function updateBars() {
-            document.getElementById('player-hp').style.width = (player.hp / player.maxHp * 100) + "%";
-            document.getElementById('enemy-hp').style.width = (enemy.hp / enemy.maxHp * 100) + "%";
+        function updateLog(msg) {
+            const logElement = document.getElementById('log');
+            logElement.innerHTML += `${msg}<br>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function showDamageNumber(target, damage, isHeal = false) {
+            const sprite = document.getElementById(target + '-sprite');
+            const numberElement = document.createElement('div');
+            numberElement.className = isHeal ? 'heal-number' : 'damage-number';
+            numberElement.textContent = (isHeal ? '+' : '-') + damage;
+            sprite.appendChild(numberElement);
+            
+            setTimeout(() => {
+                if (numberElement.parentNode) {
+                    numberElement.parentNode.removeChild(numberElement);
+                }
+            }, 1000);
         }
 
         function attack() {
-            // --- Turno del Jugador ---
-            let attackRoll = rollDice(20);
-            updateLog(`Lanzas d20... sacas un ${attackRoll}`);
+            // Verificar si podemos atacar
+            if (!gameState.inCombat || gameState.turnInProgress) return;
+            
+            // Bloquear más acciones hasta que termine el turno
+            gameState.turnInProgress = true;
+            disableCombatButtons();
+            
+            const attackRoll = rollDice(20);
+            const isCrit = attackRoll >= gameState.player.crit;
+            updateLog(`🎲 ${gameState.player.name} lanza d20... saca un ${attackRoll}${isCrit ? ' ¡CRÍTICO!' : ''}`);
 
-            if (attackRoll >= enemy.ac) {
-                let dmg = rollDice(8) + 2;
-                enemy.hp -= dmg;
+            if (attackRoll >= gameState.currentEnemy.ac || isCrit) {
+                let dmg = rollDice(gameState.player.attack[0]) + gameState.player.attack[1];
+                if (isCrit) dmg *= 2;
+                
+                gameState.currentEnemy.hp = Math.max(0, gameState.currentEnemy.hp - dmg);
                 document.getElementById('enemy-sprite').classList.add('shake');
-                updateLog(`¡Impacto! Haces ${dmg} de daño.`);
-                setTimeout(() => document.getElementById('enemy-sprite').classList.remove('shake'), 200);
+                showDamageNumber('enemy', dmg);
+                updateLog(`⚔️ ¡Impacto! Haces ${dmg} de daño.`);
+                setTimeout(() => document.getElementById('enemy-sprite').classList.remove('shake'), 300);
             } else {
-                updateLog("¡Fallaste el ataque!");
+                updateLog(`❌ ¡Fallaste! (necesitabas ${gameState.currentEnemy.ac}+)`);
             }
 
-            checkGameOver() || setTimeout(enemyTurn, 1000);
             updateBars();
+            
+            if (gameState.currentEnemy.hp <= 0) {
+                setTimeout(() => {
+                    enemyDefeated();
+                    gameState.turnInProgress = false; // Liberar el turno
+                }, 1000);
+            } else {
+                setTimeout(enemyTurn, 1500);
+            }
         }
 
         function heal() {
-            let healAmt = rollDice(6) + 2;
-            player.hp = Math.min(player.maxHp, player.hp + healAmt);
-            updateLog(`Usas una poción. Recuperas ${healAmt} HP.`);
+            // Verificar si podemos curar
+            if (!gameState.inCombat || gameState.turnInProgress) return;
+            
+            // Bloquear más acciones hasta que termine el turno
+            gameState.turnInProgress = true;
+            disableCombatButtons();
+            
+            let healAmt = rollDice(gameState.player.heal[0]) + gameState.player.heal[1];
+            let actualHeal = Math.min(healAmt, gameState.player.maxHp - gameState.player.hp);
+            gameState.player.hp = Math.min(gameState.player.maxHp, gameState.player.hp + healAmt);
+            
+            showDamageNumber('player', actualHeal, true);
+            updateLog(`💖 Usas curación. Recuperas ${actualHeal} HP.`);
             updateBars();
-            setTimeout(enemyTurn, 1000);
+            
+            setTimeout(enemyTurn, 1500);
         }
 
         function enemyTurn() {
-            updateLog("Turno del Goblin...");
-            let attackRoll = rollDice(20);
+            if (!gameState.inCombat || !gameState.turnInProgress) return;
+            
+            updateLog(`👹 Turno de ${gameState.currentEnemy.name}...`);
+            const attackRoll = rollDice(20);
+            updateLog(`🎲 ${gameState.currentEnemy.name} lanza d20... saca un ${attackRoll}`);
 
-            if (attackRoll >= player.ac) {
-                let dmg = rollDice(6);
-                player.hp -= dmg;
+            if (attackRoll >= gameState.player.ac) {
+                const dmg = rollDice(gameState.currentEnemy.attack[0]) + gameState.currentEnemy.attack[1];
+                gameState.player.hp = Math.max(0, gameState.player.hp - dmg);
+                
                 document.getElementById('player-sprite').classList.add('shake');
-                updateLog(`¡El Goblin te muerde por ${dmg} de daño!`);
-                setTimeout(() => document.getElementById('player-sprite').classList.remove('shake'), 200);
+                showDamageNumber('player', dmg);
+                updateLog(`🗡️ ¡${gameState.currentEnemy.name} te ataca por ${dmg} de daño!`);
+                setTimeout(() => document.getElementById('player-sprite').classList.remove('shake'), 300);
             } else {
-                updateLog("¡El Goblin falla!");
+                updateLog(`💨 ¡${gameState.currentEnemy.name} falla su ataque!`);
             }
 
             updateBars();
-            checkGameOver();
+            
+            if (gameState.player.hp <= 0) {
+                setTimeout(() => {
+                    gameOver();
+                    gameState.turnInProgress = false;
+                }, 1000);
+            } else {
+                // Turno del enemigo terminado, devolver control al jugador
+                setTimeout(() => {
+                    gameState.turnInProgress = false;
+                    enableCombatButtons();
+                    updateLog(`⚔️ ¡Tu turno, ${gameState.player.name}!`);
+                }, 1000);
+            }
         }
 
-        function checkGameOver() {
-            if (enemy.hp <= 0) {
-                enemy.hp = 0;
-                updateBars();
-                updateLog("<strong>¡VICTORIA! El Goblin ha muerto.</strong>");
-                disableButtons();
-                return true;
+        function enemyDefeated() {
+            const enemy = gameState.enemies[gameState.currentEnemyIndex];
+            gameState.playerXP += enemy.xp;
+            
+            updateLog(`\n🏆 ¡${enemy.name} derrotado!`);
+            updateLog(`🪙 Ganas ${enemy.xp} XP (Total: ${gameState.playerXP})`);
+            
+            gameState.currentEnemyIndex++;
+            gameState.inCombat = false;
+            gameState.turnInProgress = false; // Liberar el turno
+            
+            if (gameState.currentEnemyIndex >= gameState.enemies.length) {
+                // Completar nivel
+                document.getElementById('next-btn').style.display = 'inline-block';
+                disableCombatButtons();
+            } else {
+                // Siguiente enemigo
+                setTimeout(() => startCombat(), 2000);
             }
-            if (player.hp <= 0) {
-                player.hp = 0;
-                updateBars();
-                updateLog("<strong>HAS MUERTO... Fin de la partida.</strong>");
-                disableButtons();
-                return true;
-            }
-            return false;
         }
 
-        function disableButtons() {
-            document.querySelectorAll('button').forEach(b => b.disabled = true);
+        function disableCombatButtons() {
+            document.getElementById('attack-btn').disabled = true;
+            document.getElementById('heal-btn').disabled = true;
+        }
+
+        function enableCombatButtons() {
+            document.getElementById('attack-btn').disabled = false;
+            document.getElementById('heal-btn').disabled = false;
+        }
+
+        function autoLevelUp() {
+            const oldLevel = gameState.playerLevel;
+            gameState.playerLevel = gameState.currentLevel;
+            
+            // Solo aplicar mejoras si realmente subimos de nivel
+            if (gameState.playerLevel > oldLevel) {
+                // Mejoras por cada nivel ganado
+                const levelsGained = gameState.playerLevel - oldLevel;
+                
+                for (let i = 0; i < levelsGained; i++) {
+                    const currentLevelUp = oldLevel + i + 1;
+                    const hpIncrease = 6 + Math.floor(currentLevelUp / 2);
+                    const damageIncrease = Math.floor(currentLevelUp / 2) - Math.floor((currentLevelUp - 1) / 2); // Solo el incremento nuevo
+                    // AC solo sube en niveles específicos (3, 6, 9) - niveles de mini-boss y BBEG
+                    const acIncrease = (currentLevelUp === 3 || currentLevelUp === 6 || currentLevelUp === 9) ? 1 : 0;
+                    
+                    gameState.player.maxHp += hpIncrease;
+                    if (damageIncrease > 0) {
+                        gameState.player.attack[1] += damageIncrease;
+                    }
+                    if (acIncrease > 0) {
+                        gameState.player.ac += acIncrease;
+                    }
+                    
+                    updateLog(`\n🌟 ¡SUBES AL NIVEL ${currentLevelUp}!`);
+                    updateLog(`❤️ +${hpIncrease} HP máximo (Total: ${gameState.player.maxHp})`);
+                    if (damageIncrease > 0) {
+                        updateLog(`⚔️ +${damageIncrease} daño - ATK: 1d${gameState.player.attack[0]}+${gameState.player.attack[1]}`);
+                    }
+                    if (acIncrease > 0) {
+                        updateLog(`🛡️ ¡ARMADURA MEJORADA! +${acIncrease} AC (Total: ${gameState.player.ac})`);
+                    }
+                }
+                
+                // Curación completa al subir nivel
+                gameState.player.hp = gameState.player.maxHp;
+                updateLog(`💚 ¡HP restaurado completamente! (${gameState.player.hp}/${gameState.player.maxHp})`);
+                
+                document.getElementById('player-sprite').classList.add('level-up-animation');
+                setTimeout(() => {
+                    const sprite = document.getElementById('player-sprite');
+                    if (sprite) sprite.classList.remove('level-up-animation');
+                }, 2000);
+            }
+        }
+
+        function levelComplete() {
+            if (gameState.currentLevel === 10) {
+                // Victoria final
+                gameWon();
+            } else {
+                updateLog(`\n🎊 ¡NIVEL ${gameState.currentLevel} COMPLETADO!`);
+                updateLog(`➡️ Prepárate para el siguiente desafío...`);
+            }
+        }
+
+        function nextLevel() {
+            gameState.currentLevel++;
+            document.getElementById('next-btn').style.display = 'none';
+            enableCombatButtons();
+            
+            updateLog(`\n🎊 ¡NIVEL ${gameState.currentLevel - 1} COMPLETADO!`);
+            updateLog(`🚀 Avanzando al nivel ${gameState.currentLevel}...`);
+            
+            initializeLevel();
+        }
+
+        function gameWon() {
+            document.getElementById('final-class').textContent = gameState.player.name;
+            showScreen('victory-screen');
+        }
+
+        function gameOver() {
+            document.getElementById('final-level').textContent = gameState.currentLevel;
+            document.getElementById('final-xp').textContent = gameState.playerXP;
+            showScreen('gameover-screen');
+        }
+
+        function disableCombatButtons() {
+            document.getElementById('attack-btn').disabled = true;
+            document.getElementById('heal-btn').disabled = true;
+        }
+
+        function enableCombatButtons() {
+            document.getElementById('attack-btn').disabled = false;
+            document.getElementById('heal-btn').disabled = false;
+        }
+
+        function restartGame() {
+            gameState = {
+                selectedClass: null,
+                player: null,
+                currentLevel: 1,
+                currentEnemyIndex: 0,
+                enemies: [],
+                playerXP: 0,
+                playerLevel: 1,
+                inCombat: false,
+                turnInProgress: false // Resetear también el control de turnos
+            };
+            
+            document.querySelectorAll('.character-card').forEach(card => card.classList.remove('selected'));
+            document.getElementById('log').innerHTML = '🎮 ¡Tu aventura comienza aquí!<br>⚔️ ¡Prepárate para el combate!';
+            
+            showScreen('character-select');
         }
     </script>
 </body>
